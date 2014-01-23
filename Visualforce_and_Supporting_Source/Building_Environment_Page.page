@@ -1,0 +1,80 @@
+<apex:page standardController="Building__c">
+
+	<apex:includeScript value="{!$Resource.jquery203}" />
+	<apex:includeScript value="{!$Resource.jqueryeasing}" />
+	<apex:includeScript value="{!$Resource.easypiechart}" />
+	<apex:stylesheet value="{!$Resource.dashboardstyle}"/>
+
+	<apex:repeat value="{!Building__c.Units__r}" var="item">
+		<div class="unit">
+			￼￼<span class="chart" data-percent='{!item.Recent_Temp__c}'><span
+				class="percent"></span></span>
+			<apex:outputLink styleClass="buttonlink" target="_parent"
+				value="/{!item.id}">{!item.Name}</apex:outputLink>
+			<br /> <span class="tasklink {!item.id}"></span>
+		</div>
+	</apex:repeat>
+
+	<script>
+	$j = jQuery.noConflict();
+   		$j(document).ready(function() {
+			$j('.chart').easyPieChart({
+			easing: 'easeInOutQuint',
+			trackColor: '#dddddd',
+			scaleColor: '#666666',
+			barColor: function(percent) {
+			    
+				tempcheck = percent;
+			    percent /= 100;
+
+			    if (tempcheck > 79)
+				{
+					console.log("hot");
+				   return "rgb(" + Math.round(255 * percent) + ", " + Math.round(255 * (1-percent)) + ", 0)";
+				}
+				else if (tempcheck > 68 && tempcheck < 79)
+				{
+					console.log("ok");
+				   return "rgb(" + Math.round(255 * (1-percent)) + ", " + Math.round(255 * percent) + ", 0)";
+				}
+				else 
+				{
+					console.log("cold");
+				   return "rgb(0, " + Math.round(255 * (1-percent)) + ", " + Math.round(255 * percent) + ")";
+				}
+			},
+				lineCap: 'square',
+				lineWidth: 16,
+				size: 140,
+				onStep: function(from, to, percent) {
+					$j(this.el).find('.percent').text(Math.round(percent));
+				}
+			});
+		});
+	</script>
+
+	<!--  	Local values for hosts used only for testing purposes additionally, http 
+			has been used and allowed as exception in browser (vs https) for test purposes
+	 -->
+	<script src="http://192.168.1.100:3001/socket.io/socket.io.js"></script>
+	<script>
+	  var socket = io.connect("http://192.168.1.100", {port: 3001});
+	  socket.on('envread', function (data) {
+	    console.log(data);
+	    $j('.chart').data('easyPieChart').update(data);
+	    
+	  });
+	  socket.on('task', function (data) {
+	    console.log(data);
+	    
+	    var tasklink = "";
+	    
+	    tasklinkview = '<a href="https://na15.salesforce.com/' + data.Id + '" target="_parent" class="tl"><img src="https://na15.salesforce.com/img/icon/tasks16.png" style="vertical-align: middle;margin-right:5px;"/>Maintenance Task</a>';
+	    
+	    $j('.tasklink.' + data.WhatId).html(tasklinkview);
+	    $j('.tasklink.' + data.WhatId).fadeIn('slow');
+	    
+	  });
+	</script>
+	
+</apex:page>
